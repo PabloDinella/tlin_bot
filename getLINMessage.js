@@ -9,7 +9,7 @@ const { load } = require('cheerio');
 
 function parse(body) {
   const $ = load(body);
-  const date = $('#GridView1_Label6_0').text().trim();
+  const date = $('#GridView1_Label6_0').text().trim().replace(/(\d+)\/(\d+)\/(\d+)/, "$2-$1-$3");
   const message = `${date}
 
 ${$('#GridView1_Label1_0').find('p').not(':first-child').map(function (i, el) {
@@ -19,7 +19,7 @@ ${$('#GridView1_Label1_0').find('p').not(':first-child').map(function (i, el) {
 
   return {
     message,
-    date: date.replace(/(\d+)\/(\d+)\/(\d+)/, "$2-$1-$3")
+    date,
   };
 }
 
