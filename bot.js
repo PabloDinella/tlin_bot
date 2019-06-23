@@ -1,15 +1,14 @@
 const TeleBot = require('telebot');
-const {TOKEN} = require('./token');
 const fs = require('fs');
 const path = require('path');
 
-const bot = new TeleBot(TOKEN);
+const bot = new TeleBot(process.env.TOKEN);
 
 const http = require('http');
 const request = require('request');
 const {load} = require('cheerio');
 
-const channelID = -1001134153564
+const channelID = process.env.channelID;
 
 request({
   uri: "http://www.thelordisnear.ca/",
