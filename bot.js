@@ -18,7 +18,7 @@ request({
 
 
   var file = fs.createWriteStream(path.join(__dirname, 'mp3', parsed.date+'.mp3'));
-  request.get(`http://growingrace.com/mp3s/TheLordIsNear/2017/${parsed.date}.mp3`).pipe(file);
+  request.get(`http://growingrace.com/mp3s/TheLordIsNear/${parsed.date.split('-')[2]}/${parsed.date}.mp3`).pipe(file);
 
   file.on('finish', () => {
     bot.sendMessage(channelID, parsed.message)

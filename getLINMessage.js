@@ -15,15 +15,11 @@ function parse(body) {
 
   const message = `${$('#GridView1_Label6_0').text().trim()}
 
-${$('.LIN2014_Scripture').text()}
-
-**${$('.LIN2014_Title').text()}**
-
-${$('.LIN2014_First').text()}
-
-${texts.join('\n\n')}
-
-__${$('.LIN2014_Author').text()}__`
+${$('#GridView1_Label1_0').find('p').not(':first-child').map(function(i, el) {
+  // this === el
+  return $(this).text();
+}).get().join('\n\n')}
+`
 
   return message;
 

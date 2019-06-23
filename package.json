@@ -1,6 +1,10 @@
 {
+  "scripts": {
+    "dev:parser": "nodemon getLINMessage.js"
+  },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
+    "nodemon": "^1.19.1",
     "request": "^2.81.0",
     "telebot": "^1.2.2"
   }
