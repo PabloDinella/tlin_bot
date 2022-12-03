@@ -13,23 +13,38 @@
 import { run } from "./run";
 
 export interface Env {
-	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-	// MY_KV_NAMESPACE: KVNamespace;
-	//
-	// Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-	// MY_DURABLE_OBJECT: DurableObjectNamespace;
-	//
-	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-	// MY_BUCKET: R2Bucket;
+  // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
+  // MY_KV_NAMESPACE: KVNamespace;
+  //
+  // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
+  // MY_DURABLE_OBJECT: DurableObjectNamespace;
+  //
+  // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
+  // MY_BUCKET: R2Bucket;
 }
 
 export default {
-	async scheduled(
-		controller: ScheduledController,
-		env: Env,
-		ctx: ExecutionContext
-	): Promise<void> {
-		console.log(`Hello World!`);
-		run()
-	},
+  fetch(request, env) {
+    return run({
+      mode: env.MODE,
+      channelId: env.CHANNEL_ID,
+      channelIdTesting: env.CHANNEL_ID_TESTING,
+      token: env.TOKEN,
+    });
+  },
+  async scheduled(
+    controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<void> {
+    console.log(`Hello World!`, env);
+    ctx.waitUntil(
+      run({
+        mode: env.MODE,
+        channelId: env.CHANNEL_ID,
+        channelIdTesting: env.CHANNEL_ID_TESTING,
+        token: env.TOKEN,
+      })
+    );
+  },
 };
