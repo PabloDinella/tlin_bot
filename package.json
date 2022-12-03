@@ -1,14 +1,16 @@
 {
   "scripts": {
+    "start": "node src/index.js",
     "dev:bot": "nodemon src/index.js --dry",
     "dev:parser": "nodemon getLINMessage.js"
   },
   "type": "module",
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
+    "node-fetch": "^3.3.0",
     "nodemon": "^2.0.15",
     "request": "^2.81.0",
     "string-strip-html": "^9.1.5",
-    "telebot": "^1.2.2"
+    "telebot": "^1.4.1"
   }
 }
