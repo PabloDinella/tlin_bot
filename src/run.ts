@@ -1,4 +1,4 @@
-import parse from "./parseMessage.js";
+import parse from "./parseMessage";
 import fetch from "node-fetch";
 
 const createBot = (token: string) => {
