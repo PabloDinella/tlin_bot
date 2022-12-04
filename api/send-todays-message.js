@@ -1,4 +1,4 @@
-import { run } from "../src/run.js";
+import { run } from "../src/run";
 
 export default async function handler(request, response) {
   const result = await run(
