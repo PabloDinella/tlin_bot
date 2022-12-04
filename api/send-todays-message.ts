@@ -2,7 +2,7 @@ import {
   VercelRequest,
   VercelResponse,
 } from "@vercel/node";
-import { run } from "../run";
+import { run } from "../lib/run";
 
 export default async (request: VercelRequest, response: VercelResponse) => {
   const result = await run({

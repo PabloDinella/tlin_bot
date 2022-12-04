@@ -12,8 +12,7 @@
     "noImplicitThis": true,
     "alwaysStrict": true,
     "esModuleInterop": true,
-    "rootDir": "./src",
-    "outDir": "public",
+    "rootDir": ".",
     "moduleResolution": "node"
   }
 }
