@@ -1,7 +1,7 @@
 import { load } from "cheerio";
 import { stripHtml } from "string-strip-html";
 
-function parse(body) {
+function parse(body: string) {
   const $ = load(body);
 
   const date = $("#GridView1_Label6_0")
@@ -19,10 +19,14 @@ ${$(".LIN-Title").text()}
 
 ${stripHtml($(".LIN-Text").toString(), {
   cb: ({ tag, deleteFrom, deleteTo, insert, rangesArr, proposedReturn }) => {
-    if (tag.name === "p" && tag.slashPresent) {
-      rangesArr.push([deleteFrom, deleteTo, "\n\n"]);
+    if (deleteFrom === null || deleteTo === null) {
+      return;
     }
-    rangesArr.push([deleteFrom, deleteTo, insert]);
+
+    if (tag.name === "p" && tag.slashPresent) {
+      rangesArr.push(deleteFrom, deleteTo, "\n\n");
+    }
+    rangesArr.push(deleteFrom, deleteTo, insert);
   },
 }).result.trim()}
 

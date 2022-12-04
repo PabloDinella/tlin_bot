@@ -1,6 +1,10 @@
-import { run } from "../src/run.js";
+import {
+  VercelRequest,
+  VercelResponse,
+} from "@vercel/node";
+import { run } from "../run";
 
-export default async (request, response) => {
+export default async (request: VercelRequest, response: VercelResponse) => {
   const result = await run({
     mode: process.env.MODE || "",
     token: process.env.TOKEN || "",
