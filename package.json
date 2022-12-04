@@ -4,7 +4,6 @@
     "dev:bot": "nodemon src/index.js --dry",
     "dev:parser": "nodemon getLINMessage.js"
   },
-  "type": "module",
   "dependencies": {
     "@types/node": "^18.11.10",
     "@vercel/node": "^2.7.1",
