@@ -1,8 +1,7 @@
 {
   "scripts": {
     "start": "node src/cli.js",
-    "dev:bot": "nodemon src/index.js --dry",
-    "build": "rimraf ./public && tsc"
+    "dev:bot": "nodemon src/index.js --dry"
   },
   "type": "module",
   "dependencies": {
