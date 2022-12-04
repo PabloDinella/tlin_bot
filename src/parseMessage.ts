@@ -1,7 +1,7 @@
 import { load } from "cheerio";
 import { stripHtml } from "string-strip-html";
 
-function parse(body) {
+function parse(body: string) {
   const $ = load(body);
 
   const date = $("#GridView1_Label6_0")
