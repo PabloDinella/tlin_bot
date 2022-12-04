@@ -1,11 +1,11 @@
 import parse from "./parseMessage";
 import fetch from "node-fetch";
 
-const createBot = (token: string) => {
+const createBot = (token) => {
   const telegramApiUrl = `https://api.telegram.org/bot${token}`;
 
   return {
-    sendMessage: async (channelId: string, text: string) => {
+    sendMessage: async (channelId, text) => {
       const response = await fetch(
         telegramApiUrl +
           "/sendMessage?" +
@@ -21,7 +21,7 @@ const createBot = (token: string) => {
       console.log("telegram's response", await response.json());
       return response;
     },
-    sendAudio: async (channelId: string, audio: string) => {
+    sendAudio: async (channelId, audio) => {
       const response = await fetch(
         telegramApiUrl +
           "/sendAudio?" +
@@ -40,17 +40,7 @@ const createBot = (token: string) => {
   };
 };
 
-export async function run({
-  mode,
-  channelId,
-  channelIdTesting,
-  token,
-}: {
-  mode: string;
-  channelId: string;
-  channelIdTesting: string;
-  token: string;
-}) {
+export async function run({ mode, channelId, channelIdTesting, token }) {
   fetch("https://webhook.site/22a0b275-3692-4e67-a693-71ec6458ccfd", {
     method: "post",
     body: "testt",

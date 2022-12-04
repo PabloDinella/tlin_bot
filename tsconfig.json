@@ -11,6 +11,8 @@
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "rootDir": "api",
+    "outDir": "public"
   }
 }
