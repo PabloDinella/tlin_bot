@@ -1,7 +1,14 @@
 import { run } from "../src/run.js";
 
 export default async function handler(request, response) {
-  const result = await run();
+  const result = await run(
+    {
+      mode: process.env.MODE,
+      token: process.env.TOKEN,
+      channelId: process.env.CHANNEL_ID,
+      channelIdTesting: process.env.CHANNEL_ID_TESTING,
+    }
+  );
 
   if (result) {
     return response.status(200).json({
