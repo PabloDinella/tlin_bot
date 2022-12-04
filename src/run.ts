@@ -86,7 +86,6 @@ export async function run({
         parsed.date
       }.mp3`
     );
-    throw new Error("Chegou aqui");
     return true;
   }
 
