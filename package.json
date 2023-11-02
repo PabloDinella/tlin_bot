@@ -13,7 +13,6 @@
     "@vercel/node": "^2.7.1",
     "cheerio": "^1.0.0-rc.2",
     "node-fetch": "^3.3.0",
-    "nodemon": "^2.0.15",
     "string-strip-html": "^9.1.5"
   },
   "devDependencies": {
