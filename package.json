@@ -1,7 +1,11 @@
 {
   "scripts": {
-    "start": "node src/cli.js",
-    "dev:bot": "nodemon src/index.js --dry"
+    "dev": "MODE=parseOnly node --env-file=.env src/cli.js",
+    "staging": "MODE=staging node --env-file=.env src/cli.js",
+    "production": "MODE=production node --env-file=.env src/cli.js"
+  },
+  "engines": {
+    "node": "20"
   },
   "type": "module",
   "dependencies": {

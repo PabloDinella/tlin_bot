@@ -4,18 +4,17 @@ import { stripHtml } from "string-strip-html";
 function parse(body) {
   const $ = load(body);
 
-  const date = $("#GridView1_Label6_0")
-    .text()
-    .trim()
-    .replace(/(\d+)\/(\d+)\/(\d+)/, "$2-$1-$3");
+  const date = $("time").attr("datetime");
 
-  console.log($(".LIN-Text").toString());
+  const formattedDate = $(".LIN-Date").text();
 
-  const message = `${$(".LIN-Date").text()}
+  const audioUrl = $("audio source").attr("src");
 
-${$(".LIN-HeadVerse").text()}
+  const message = `${formattedDate}
 
-${$(".LIN-Title").text()}
+${$(".LIN-HeadVerse").text().trim()}
+
+${$(".LIN-Title").text().trim()}
 
 ${stripHtml($(".LIN-Text").toString(), {
   cb: ({ tag, deleteFrom, deleteTo, insert, rangesArr, proposedReturn }) => {
@@ -27,11 +26,17 @@ ${stripHtml($(".LIN-Text").toString(), {
 }).result.trim()}
 
 ${$(".LIN-Author").text()}
+
+View, share or find the printed version of this message on the website: ${$(
+    "#page-url"
+  ).attr("href")}
 `;
 
   return {
     message,
     date,
+    formattedDate,
+    audioUrl,
   };
 }
 

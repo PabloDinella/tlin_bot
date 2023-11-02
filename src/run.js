@@ -12,6 +12,7 @@ const createBot = (token) => {
           new URLSearchParams({
             chat_id: channelId,
             text,
+            // parse_mode: "MarkdownV2",
           }),
         {
           method: "POST",
@@ -21,13 +22,14 @@ const createBot = (token) => {
       console.log("telegram's response", await response.json());
       return response;
     },
-    sendAudio: async (channelId, audio) => {
+    sendAudio: async (channelId, audio, title) => {
       const response = await fetch(
         telegramApiUrl +
           "/sendAudio?" +
           new URLSearchParams({
             chat_id: channelId,
             audio,
+            title,
           }),
         {
           method: "POST",
@@ -40,46 +42,41 @@ const createBot = (token) => {
   };
 };
 
-export async function run({ mode, channelId, channelIdTesting, token }) {
-  fetch("https://webhook.site/22a0b275-3692-4e67-a693-71ec6458ccfd", {
-    method: "post",
-    body: "testt",
-  });
-  const bot = createBot(token);
-
-  const body = await fetch("http://www.thelordisnear.ca/", {
+export async function run({
+  mode,
+  channelId: channelIdProduction,
+  channelIdTesting,
+  token,
+}) {
+  const body = await fetch("https://thelordisnear.org/", {
     method: "get",
   }).then((response) => response.text());
 
   const parsed = parse(body);
 
   console.log(`Running in mode: ${mode}`);
+  console.log(parsed.message);
+  console.log(parsed.audioUrl);
 
-  console.log(parsed);
-
-  if (mode === "production") {
-    await bot.sendMessage(channelId, parsed.message);
-    await bot.sendAudio(
-      channelId,
-      `http://growingrace.com/mp3s/TheLordIsNear/${parsed.date.split("-")[2]}/${
-        parsed.date
-      }.mp3`
-    );
+  if (mode === "parseOnly") {
     return true;
   }
 
-  if (mode === "testing") {
-    await bot.sendMessage(channelIdTesting, parsed.message);
-    await bot.sendAudio(
-      channelIdTesting,
-      `http://growingrace.com/mp3s/TheLordIsNear/${parsed.date.split("-")[2]}/${
-        parsed.date
-      }.mp3`
-    );
-    return true;
-  }
+  const bot = createBot(token);
 
-  if (mode === "logonly") {
-    return true;
-  }
+  const channelId = (() => {
+    if (mode === "production") {
+      return channelIdProduction;
+    }
+
+    if (mode === "staging") {
+      return channelIdTesting;
+    }
+
+    return null;
+  })();
+
+  await bot.sendMessage(channelId, parsed.message);
+  await bot.sendAudio(channelId, parsed.audioUrl, parsed.formattedDate);
+  return true;
 }
