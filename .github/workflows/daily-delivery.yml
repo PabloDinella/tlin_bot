@@ -1,0 +1,95 @@
+name: Daily Telegram delivery
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+      timezone: "America/Sao_Paulo"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Telegram destination
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      date:
+        description: Optional date in YYYY-MM-DD format
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-telegram-${{ github.event_name == 'schedule' && 'production' || inputs.mode }}
+  cancel-in-progress: false
+
+jobs:
+  deliver:
+    if: github.event_name == 'workflow_dispatch' || vars.ENABLE_GITHUB_DELIVERY == 'true'
+    runs-on: ubuntu-latest
+    env:
+      PUBLICATION: en
+      MODE: ${{ github.event_name == 'schedule' && 'production' || inputs.mode }}
+      DELIVERY_DATE: ${{ inputs.date || '' }}
+      TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+      CHANNEL_ID_TESTING: ${{ secrets.TELEGRAM_TEST_CHANNEL_ID }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Resolve delivery date
+        run: |
+          if [ -z "$DELIVERY_DATE" ]; then
+            echo "DELIVERY_DATE=$(TZ=America/Sao_Paulo date +%F)" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Deliver text
+        run: npm run deliver:record -- text
+
+      - name: Commit text receipt
+        env:
+          DELIVERY_PART: text
+        run: |
+          git add delivery-log
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "tlin-bot"
+          git config user.email "tlin-bot@users.noreply.github.com"
+          git commit -m "delivery(en): record ${DELIVERY_PART} for ${DELIVERY_DATE:-today}"
+          git fetch origin master
+          git rebase origin/master
+          git push origin HEAD:master
+
+      - name: Deliver audio
+        run: npm run deliver:record -- audio
+
+      - name: Commit audio receipt
+        env:
+          DELIVERY_PART: audio
+        run: |
+          git add delivery-log
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "tlin-bot"
+          git config user.email "tlin-bot@users.noreply.github.com"
+          git commit -m "delivery(en): record ${DELIVERY_PART} for ${DELIVERY_DATE:-today}"
+          git fetch origin master
+          git rebase origin/master
+          git push origin HEAD:master

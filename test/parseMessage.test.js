@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
+import { getLedgerPath, readLedger, writeLedger } from "../src/deliveryLedger.js";
 import parse from "../src/parseMessage.js";
 import { parseAudioUrl } from "../src/getAudioUrl.js";
 import { buildGbvUrl, getTodayInSaoPaulo, run } from "../src/run.js";
@@ -43,6 +47,43 @@ test("uses the Sao Paulo calendar date", () => {
     getTodayInSaoPaulo(new Date("2026-09-13T01:30:00.000Z")),
     "2026-09-12"
   );
+});
+
+test("stores delivery receipts in a publication and mode-specific path", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tlin-ledger-"));
+  const options = {
+    root,
+    publication: "en",
+    mode: "production",
+    date: "2026-09-12",
+  };
+  const receipt = {
+    version: 1,
+    publication: "en",
+    mode: "production",
+    date: "2026-09-12",
+    text: { status: "sent", messageId: 5715 },
+  };
+
+  try {
+    assert.equal(await readLedger(options), null);
+    const ledgerPath = await writeLedger(options, receipt);
+    assert.equal(
+      ledgerPath,
+      path.join(root, "delivery-log/en/production/2026/09/12.json")
+    );
+    assert.deepEqual(await readLedger(options), receipt);
+    assert.throws(
+      () =>
+        getLedgerPath({
+          ...options,
+          publication: "../outside",
+        }),
+      /Invalid publication/
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("extracts and validates the Lord Is Near audio URL", () => {
@@ -161,6 +202,105 @@ test("sends validated audio after the text message", async () => {
   assert.equal(telegramCalls[1].body.get("chat_id"), "test-channel");
   assert.equal(telegramCalls[1].body.get("title"), "Saturday September 12, 2026");
   assert.equal(telegramCalls[1].body.get("audio").type, "audio/mpeg");
+});
+
+test("a recorded text receipt prevents duplicate Telegram delivery", async () => {
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(String(url));
+
+    if (String(url).includes("gbv-online")) {
+      return { ok: true, status: 200, json: async () => record };
+    }
+
+    throw new Error("Telegram must not be called for a recorded delivery.");
+  };
+
+  const result = await run({
+    mode: "production",
+    channelId: "production-channel",
+    token: "test-token",
+    date: "2026-09-12",
+    deliveryPart: "text",
+    deliveryState: { text: { status: "sent", messageId: 5715 } },
+    fetchImpl,
+  });
+
+  assert.equal(result.textMessageId, 5715);
+  assert.deepEqual(calls.length, 1);
+});
+
+test("audio-only delivery requires and reuses the recorded text receipt", async () => {
+  const telegramMethods = [];
+  const fetchImpl = async (url, options = {}) => {
+    const value = String(url);
+
+    if (value.includes("gbv-online")) {
+      return { ok: true, status: 200, json: async () => record };
+    }
+
+    if (value === "https://thelordisnear.org/2026/0912") {
+      return {
+        ok: true,
+        status: 200,
+        text: async () =>
+          '<audio><source src="https://mp3.thelordisnear.org/daily.mp3"></audio>',
+      };
+    }
+
+    if (
+      value === "https://mp3.thelordisnear.org/daily.mp3" &&
+      options.method === "HEAD"
+    ) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => "audio/mpeg" },
+      };
+    }
+
+    if (value === "https://mp3.thelordisnear.org/daily.mp3") {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => "audio/mpeg" },
+        arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+      };
+    }
+
+    telegramMethods.push(value.split("/").at(-1));
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, result: { message_id: 456 } }),
+    };
+  };
+
+  const result = await run({
+    mode: "production",
+    channelId: "production-channel",
+    token: "test-token",
+    date: "2026-09-12",
+    deliveryPart: "audio",
+    deliveryState: { text: { status: "sent", messageId: 123 } },
+    fetchImpl,
+  });
+
+  assert.equal(result.textMessageId, 123);
+  assert.equal(result.audioMessageId, 456);
+  assert.deepEqual(telegramMethods, ["sendAudio"]);
+
+  await assert.rejects(
+    run({
+      mode: "production",
+      channelId: "production-channel",
+      token: "test-token",
+      date: "2026-09-12",
+      deliveryPart: "audio",
+      fetchImpl,
+    }),
+    /Text delivery must be recorded/
+  );
 });
 
 test("audio failure does not prevent the text message", async () => {

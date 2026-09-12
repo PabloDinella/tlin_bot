@@ -73,7 +73,6 @@ const createBot = (token, fetchImpl) => {
       }
 
       console.log("Telegram message sent", {
-        channelId,
         messageId: result.result?.message_id,
       });
       return result;
@@ -125,7 +124,6 @@ const createBot = (token, fetchImpl) => {
       }
 
       console.log("Telegram audio sent", {
-        channelId,
         messageId: result.result?.message_id,
       });
       return result;
@@ -140,9 +138,15 @@ export async function run({
   token,
   date = getTodayInSaoPaulo(),
   fetchImpl = fetch,
+  deliveryPart = "all",
+  deliveryState = {},
 }) {
   if (!(["parseOnly", "staging", "production"].includes(mode))) {
     throw new Error(`Unsupported MODE: ${mode || "(empty)"}.`);
+  }
+
+  if (!["all", "text", "audio"].includes(deliveryPart)) {
+    throw new Error(`Unsupported delivery part: ${deliveryPart}.`);
   }
 
   const record = await getDailyRecord(date, fetchImpl);
@@ -153,11 +157,14 @@ export async function run({
   }
 
   let audioUrl = null;
+  const wantsAudio = mode === "parseOnly" || deliveryPart !== "text";
 
-  try {
-    audioUrl = await getAudioUrl(parsed.sourceUrl, fetchImpl);
-  } catch (error) {
-    console.warn(`Audio unavailable: ${error.message}`);
+  if (wantsAudio) {
+    try {
+      audioUrl = await getAudioUrl(parsed.sourceUrl, fetchImpl);
+    } catch (error) {
+      console.warn(`Audio unavailable: ${error.message}`);
+    }
   }
 
   console.log(`Running in mode: ${mode}`);
@@ -171,20 +178,42 @@ export async function run({
   const channelId =
     mode === "production" ? channelIdProduction : channelIdTesting;
   const bot = createBot(token, fetchImpl);
-  await bot.sendMessage(channelId, parsed.message);
+  let textMessageId = deliveryState.text?.messageId || null;
+  let audioMessageId = deliveryState.audio?.messageId || null;
 
-  let audioSent = false;
+  if (deliveryPart !== "audio" && !textMessageId) {
+    const result = await bot.sendMessage(channelId, parsed.message);
+    textMessageId = result.result?.message_id || null;
+  }
 
-  if (audioUrl) {
+  if (deliveryPart === "audio" && !textMessageId) {
+    throw new Error("Text delivery must be recorded before audio delivery.");
+  }
+
+  if (deliveryPart !== "text" && audioUrl && !audioMessageId) {
     try {
-      await bot.sendAudio(channelId, audioUrl, parsed.formattedDate);
-      audioSent = true;
+      const result = await bot.sendAudio(channelId, audioUrl, parsed.formattedDate);
+      audioMessageId = result.result?.message_id || null;
     } catch (error) {
+      if (deliveryPart === "audio") {
+        throw error;
+      }
+
       console.warn(`Telegram audio unavailable: ${error.message}`);
     }
   }
 
-  return { ...parsed, audioUrl, audioSent };
+  if (deliveryPart === "audio" && !audioUrl) {
+    throw new Error("Audio is unavailable for the requested date.");
+  }
+
+  return {
+    ...parsed,
+    audioUrl,
+    textMessageId,
+    audioMessageId,
+    audioSent: Boolean(audioMessageId),
+  };
 }
 
 export { buildGbvUrl, getTodayInSaoPaulo };
