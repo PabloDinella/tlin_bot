@@ -1,6 +1,6 @@
 import { run } from "./run.js";
 
-run({
+await run({
   mode: process.env.MODE || "",
   token: process.env.TOKEN || "",
   channelId: process.env.CHANNEL_ID || "",
