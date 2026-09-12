@@ -1,8 +1,10 @@
 import parse from "./parseMessage.js";
-import fetch from "node-fetch";
+import { getAudioUrl } from "./getAudioUrl.js";
+import fetch, { Blob, FormData } from "node-fetch";
 
 const GBV_API_URL = "https://apissl.gbv-online.org/api/CalendarDays/findOne";
 const GBV_PRODUCT_ID = 773;
+const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 
 function getTodayInSaoPaulo(now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -42,13 +44,22 @@ const createBot = (token, fetchImpl) => {
 
   const telegramApiUrl = `https://api.telegram.org/bot${token}`;
 
+  const callTelegram = async (method, options) => {
+    try {
+      return await fetchImpl(`${telegramApiUrl}/${method}`, options);
+    } catch {
+      // Do not let network-library errors leak the bot token from the request URL.
+      throw new Error(`Telegram ${method} request failed.`);
+    }
+  };
+
   return {
     sendMessage: async (channelId, text) => {
       if (!channelId) {
         throw new Error("A Telegram channel ID is required.");
       }
 
-      const response = await fetchImpl(`${telegramApiUrl}/sendMessage`, {
+      const response = await callTelegram("sendMessage", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ chat_id: channelId, text }),
@@ -62,6 +73,58 @@ const createBot = (token, fetchImpl) => {
       }
 
       console.log("Telegram message sent", {
+        channelId,
+        messageId: result.result?.message_id,
+      });
+      return result;
+    },
+    sendAudio: async (channelId, audioUrl, title) => {
+      if (!channelId) {
+        throw new Error("A Telegram channel ID is required.");
+      }
+
+      const audioResponse = await fetchImpl(audioUrl, {
+        signal: AbortSignal.timeout(15_000),
+      });
+
+      if (!audioResponse.ok) {
+        throw new Error(`Audio download failed with HTTP ${audioResponse.status}.`);
+      }
+
+      const contentType = audioResponse.headers?.get?.("content-type") || "";
+
+      if (!contentType.toLowerCase().startsWith("audio/")) {
+        throw new Error(`Unexpected audio content type: ${contentType || "missing"}.`);
+      }
+
+      const audioBytes = await audioResponse.arrayBuffer();
+
+      if (audioBytes.byteLength > MAX_AUDIO_BYTES) {
+        throw new Error("Audio file exceeds Telegram's 50 MB upload limit.");
+      }
+
+      const form = new FormData();
+      form.set("chat_id", channelId);
+      form.set("title", title);
+      form.set(
+        "audio",
+        new Blob([audioBytes], { type: contentType }),
+        `${title}.mp3`
+      );
+
+      const response = await callTelegram("sendAudio", {
+        method: "POST",
+        body: form,
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        throw new Error(
+          `Telegram sendAudio failed: ${result.description || `HTTP ${response.status}`}`
+        );
+      }
+
+      console.log("Telegram audio sent", {
         channelId,
         messageId: result.result?.message_id,
       });
@@ -89,11 +152,20 @@ export async function run({
     throw new Error(`GBV API returned ${parsed.date}; expected ${date}.`);
   }
 
+  let audioUrl = null;
+
+  try {
+    audioUrl = await getAudioUrl(parsed.sourceUrl, fetchImpl);
+  } catch (error) {
+    console.warn(`Audio unavailable: ${error.message}`);
+  }
+
   console.log(`Running in mode: ${mode}`);
   console.log(parsed.message);
+  console.log(`Audio: ${audioUrl || "unavailable"}`);
 
   if (mode === "parseOnly") {
-    return parsed;
+    return { ...parsed, audioUrl };
   }
 
   const channelId =
@@ -101,7 +173,18 @@ export async function run({
   const bot = createBot(token, fetchImpl);
   await bot.sendMessage(channelId, parsed.message);
 
-  return parsed;
+  let audioSent = false;
+
+  if (audioUrl) {
+    try {
+      await bot.sendAudio(channelId, audioUrl, parsed.formattedDate);
+      audioSent = true;
+    } catch (error) {
+      console.warn(`Telegram audio unavailable: ${error.message}`);
+    }
+  }
+
+  return { ...parsed, audioUrl, audioSent };
 }
 
 export { buildGbvUrl, getTodayInSaoPaulo };
