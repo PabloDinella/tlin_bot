@@ -8,5 +8,10 @@
     "status": "sent",
     "messageId": 87,
     "sentAt": "2026-09-14T15:36:16.004Z"
+  },
+  "audio": {
+    "status": "sent",
+    "messageId": 88,
+    "sentAt": "2026-09-14T15:36:22.486Z"
   }
 }
