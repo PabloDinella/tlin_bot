@@ -1,6 +1,6 @@
 # GitHub Actions deployment
 
-The `Daily Telegram delivery` workflow is scheduled for 7:00 AM in
+The `Daily Telegram delivery` workflow is scheduled for 7:17 AM in
 `America/Sao_Paulo`. Scheduled production delivery remains disabled unless the
 repository variable `ENABLE_GITHUB_DELIVERY` is exactly `true`.
 
