@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "publication": "en",
+  "mode": "production",
+  "date": "2026-09-15",
+  "sourceUrl": "https://thelordisnear.org/2026/0915",
+  "text": {
+    "status": "sent",
+    "messageId": 5720,
+    "sentAt": "2026-09-15T13:12:28.179Z"
+  },
+  "audio": {
+    "status": "sent",
+    "messageId": 5721,
+    "sentAt": "2026-09-15T13:12:35.941Z"
+  }
+}
