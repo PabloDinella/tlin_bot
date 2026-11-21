@@ -1,6 +1,8 @@
 import { load } from "cheerio";
 
-const AUDIO_HOST = "mp3.thelordisnear.org";
+const AUDIO_HOST_MP3 = "mp3.thelordisnear.org";
+const AUDIO_HOST_DATA = "data.thelordisnear.org";
+const DATA_AUDIO_PATH = /^\/\d{4}\/hq\/[^/]+\.mp3$/;
 const REQUEST_HEADERS = {
   accept: "text/html,application/xhtml+xml",
   "user-agent":
@@ -17,15 +19,19 @@ function parseAudioUrl(html, sourceUrl) {
 
   const url = new URL(value, sourceUrl);
 
-  if (
-    url.protocol !== "https:" ||
-    url.hostname !== AUDIO_HOST ||
-    !url.pathname.endsWith(".mp3")
-  ) {
+  if (url.protocol !== "https:" || !url.pathname.endsWith(".mp3")) {
     throw new Error(`Unexpected audio URL: ${url.toString()}`);
   }
 
-  return url;
+  if (url.hostname === AUDIO_HOST_MP3) {
+    return url;
+  }
+
+  if (url.hostname === AUDIO_HOST_DATA && DATA_AUDIO_PATH.test(url.pathname)) {
+    return url;
+  }
+
+  throw new Error(`Unexpected audio URL: ${url.toString()}`);
 }
 
 async function getAudioUrl(sourceUrl, fetchImpl) {

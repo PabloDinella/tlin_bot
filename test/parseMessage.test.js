@@ -97,10 +97,33 @@ test("extracts and validates the Lord Is Near audio URL", () => {
     audioUrl.toString(),
     "https://mp3.thelordisnear.org/2026-09-12_c8af6.mp3"
   );
+  assert.equal(
+    parseAudioUrl(
+      '<audio><source src="https://data.thelordisnear.org/2026/hq/2026-11-21_a0d75.mp3"></audio>',
+      sourceUrl
+    ).toString(),
+    "https://data.thelordisnear.org/2026/hq/2026-11-21_a0d75.mp3"
+  );
   assert.throws(
     () =>
       parseAudioUrl(
         '<audio><source src="https://example.com/untrusted.mp3"></audio>',
+        sourceUrl
+      ),
+    /Unexpected audio URL/
+  );
+  assert.throws(
+    () =>
+      parseAudioUrl(
+        '<audio><source src="https://data.thelordisnear.org/2026-11-21_a0d75.mp3"></audio>',
+        sourceUrl
+      ),
+    /Unexpected audio URL/
+  );
+  assert.throws(
+    () =>
+      parseAudioUrl(
+        '<audio><source src="http://data.thelordisnear.org/2026/hq/2026-11-21_a0d75.mp3"></audio>',
         sourceUrl
       ),
     /Unexpected audio URL/
